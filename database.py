@@ -13,11 +13,23 @@ mycursor = database.cursor()
 # Create tables if not exists
 def createTable():
     mycursor.execute("CREATE TABLE IF NOT EXISTS User (username VARCHAR(50), discordID VARCHAR(50) PRIMARY KEY)")
-    mycursor.execute("CREATE TABLE IF NOT EXISTS Stocks (discordID VARCHAR(50), stockname VARCHAR(50), stockprice int, notificationPrice int, PRIMARY KEY (discordID, stockname), FOREIGN KEY(discordID) REFERENCES User(discordID))")
+    database.commit()
 
 # Add user to User table
 def addUser(username, discordID):
     mycursor.execute("INSERT INTO User (username, discordID) VALUES (%s, %s) ON DUPLICATE KEY UPDATE username = VALUES(username)", (username, discordID))
+    database.commit()
+
+    mycursor.execute("""
+    CREATE TABLE IF NOT EXISTS Stocks (
+        discordID VARCHAR(50),
+        stockname VARCHAR(50),
+        stockprice INT,
+        notificationPrice INT,
+        PRIMARY KEY (discordID, stockname),
+        FOREIGN KEY (discordID) REFERENCES User(discordID)
+    )
+    """)
     database.commit()
 
 # Add stock to Stocks table

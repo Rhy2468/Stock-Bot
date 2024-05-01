@@ -4,7 +4,7 @@ from typing import Final
 import os 
 from dotenv import load_dotenv
 from discord import Intents, Client, Message
-from responses import get_response
+from stockCommands import get_response
 
 #import database 
 import database
@@ -20,10 +20,6 @@ client: Client = Client(intents=intents)
 
 #Message 
 async def send_message(message: Message, user_message: str) -> None:
-    #Check if Intents was enabled
-    if not user_message:
-        print('Message was empty')
-        return
     
     #Check if user wants to response in private using '?' as a prefix 
     if is_private := user_message[0] == '?':
@@ -43,15 +39,41 @@ async def on_ready() -> None:
 #Handling messages 
 @client.event
 async def on_message(message: Message) -> None:
+    #IF author is user, return. 
     if message.author == client.user:
         return 
     
+    message_lowered = message.content.lower()
     username: str = str(message.author)
-    user_message: str = message.content
+    userMessage: str = message.content
+    discordID: str = message.author.id
     channel: str = str(message.channel)
+    if (message_lowered.startswith("$sb")):
+        print(f'[{channel}] {username}: "{userMessage}"')
+        await send_message(message, userMessage[3:0])
+    elif (message.content.startswith("$sb /addaccount")):
+        database.createTable()
+        database.addUser(username, discordID)
+    elif (message.content.startswith("$sb /addstock")):
+        addStockName = message_lowered[14:17]
+        addStockPrice = message_lowered[17:]
+        database.addStock(discordID,addStockName,addStockPrice)
+    elif (message.content.startswith("$sb /removestock")):
+        removeStockName = message.lowered[17:]
+        database.deleteStock(discordID,removeStockName)
+    elif (message.content.startswith("$sb /editstock")):
+        editStockName = message.lowered[15:18]
+        editStockPrice = message.lowered[20:]
+        database.updateStock(discordID, editStockName, editStockPrice)
+    elif (message.content.startswith("$sb /liststocks")):
+        stockList = database.retrieveAll(discordID)
+    elif (message.content.startswith("$sb /deleteaccount")):
+        database.deleteUser(discordID)
+    else: 
+        await message.author.send("Invalid Response (Please check spelling/formmating)\n Type $SB for the list of available commands")
 
-    print(f'[{channel}] {username}: "{user_message}"')
-    await send_message(message, user_message)
+
+    
 
 
 #main entry point/ do not touch  
