@@ -2,18 +2,33 @@ import yfinance as yf
 import time 
 import threading 
 
+#import database
+import database
+
 def getStockPrice(stockName):
     stock = yf.Ticker(stockName)
     todays_data = stock.history(period="id")
     return todays_data['Close'][-1] if not todays_data.empty else None 
 
-def monitor_stocks(stockList, interval=60):
+def monitor_stocks(discordID, interval=60, stop_event = None):
     def run():
-        while True: 
-            for stocks in stockList:
+        while not stop_event.is_set(): 
+            stockList = database.retrieveMonitoringAll(discordID)
+            notifyStocks = []
+            for stockName in stockList:
+                notificationPrice = database.getNotificationPrice(discordID, stockName)
                 price = getStockPrice(stockName)
                 print(f"Current price of {stockName}: {price}")
+                aboveBelow = database.getAboveBelowStatus(discordID, stockName)
+
+                if aboveBelow and price >= notificationPrice:
+                    notifyStocks.append(stockName)
+                
+                if not aboveBelow and price <= notificationPrice:
+                    notifyStocks.append(stockName)
+                
                 time.sleep(interval)/len(stockList)
+            return notifyStocks
     
     #keep function monitoring in different thread 
     thread = threading.Thread(target=run)
