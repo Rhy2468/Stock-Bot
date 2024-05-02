@@ -66,14 +66,16 @@ def deleteUser(discordID):
 # Retrieve all stocks associated with a user
 def retrieveAll(discordID):
     mycursor.execute("SELECT username FROM User WHERE discordID = %s", (discordID,))
-    username = mycursor.fetchone()[0]
     mycursor.execute("SELECT stockname, notificationPrice, aboveBelow FROM Stocks WHERE discordID = %s", (discordID,))
     stocks = mycursor.fetchall()
-    stock_list = [f"{username}'s Stocks:"]
+    stock_list = []
+    count = 1
     for stock in stocks:
-        status = "ABOVE" if stock[2] else "BELOW"
-        stock_list.append(f"Stock Name: {stock[0]}, Notification Price: {stock[1]}, Status: {status}")
-    return '\n'.join(stock_list)
+        stock_price = stockCommands.getStockPrice(stock)
+        status = "EXCEEDS" if stock[2] else "FALLS BELOW"
+        stock_list.append(f"{count}. {stock[0]}  -  Current Price:{stock_price}, Notification Price: {status} {stock[1]}")
+        count = count + 1
+    return stock_list
 
 #Returns list of all active stocks 
 def retrieveMonitoringAll(discordID):

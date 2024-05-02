@@ -36,48 +36,82 @@ async def on_message(message: Message) -> None:
     if message.author == client.user:
         return 
     
-    message_lowered = message.content.lower()
-    username: str = str(message.author)
-    userMessage: str = message.content
-    discordID: str = message.author.id
-    channel: str = str(message.channel)
-    parts = message_lowered.split()
-    if (message_lowered.startswith("$sb")):
-        print(f'[{channel}] {username}: "{userMessage}"')
+    if message.content.startswith('$sb'): 
+        command_line = message.content[len('$sb'):].strip()
+        command_parts = command_line.split() 
+        command = command_parts[0] if command_parts else ''
+        args = command_parts[1:]
+
+        username: str = str(message.author)
+        discordID: str = message.author.id
+        print('Passed prefix check')
+
+
+        # Command routing
+        if command == '/addaccount':
+            print('started Add Account')
+            await addAccount(args, username, discordID)
+        elif command == '/addstock':
+            await addStock(message, args, discordID)
+        elif command == '/removestock':
+            await removeStock(message, args, discordID)
+        elif command == '/liststocks':
+            await listStocks(message, discordID)
+        elif command == '/deleteaccount':
+            await deleteAccount(message, args, discordID)
+        elif command == '/editstock':
+            await editStock(message, args, discordID)
+        else:
+            # If the command is unrecognized
+            await message.channel.send("Sorry, I didn't recognize that command.")
         
-    elif (message.content.startswith("$sb /addaccount")):
-        database.initializeTablesTable(username, discordID)
-        database.addUser(username, discordID)
-    elif (message.content.startswith("$sb /addstock")):
+async def addAccount(args: list, username: str, discordID: str):
+    database.initializeTables(username, discordID)
+    database.addUser(username, discordID)
+    print('Finished Add Account')
 
-        if (len(parts >= 4)):
-            addStockName = parts[2]
-            try:
-                addStockNPrice = parts[3]
-                if (parts[4]):
+async def addStock(message: Message, args: list, discordID: str):
+    if (len(args) == 3):
+        addStockName = args[0]
+        try:
+            addStockNPrice = args[1]
+            if (args[2]):
                     database.addStock(discordID,addStockName,addStockNPrice, True)
-                else:
+            else:
                     database.addStock(discordID,addStockName,addStockNPrice, False)
-                await message.channel.send(f"{message.author.mention}, you have added {addStockName} at ${addStockNPrice}!")
-            except ValueError:
-                await message.channel.send("Please enter a valid Price")
-        else: 
-            await message.channel.send("Usage: $sb /addstock [stock name] [notification price] [1 for above or 0 for below]")
-        startMonitoring(message.author, discordID)
-    elif (message.content.startswith("$sb /removestock")):
-        removeStockName = message.lowered[17:]
-        database.deleteStock(message,removeStockName)
-    elif (message.content.startswith("$sb /editstock")):
-        editStockName = message.lowered[15:18]
-        editStockPrice = message.lowered[20:]
-        database.updateStock(discordID, editStockName, editStockPrice)
-    elif (message.content.startswith("$sb /liststocks")):
-        stockList = database.retrieveAll(discordID)
-    elif (message.content.startswith("$sb /deleteaccount")):
-        database.deleteUser(discordID)
+            await message.channel.send(f"{message.author.mention}, you have added {addStockName} at ${addStockNPrice}!")
+        except ValueError:
+            await message.channel.send("Please enter a valid Price")
     else: 
-        await message.author.send("Invalid Response (Please check spelling/formmating)\n Type $SB for the list of available commands")
+        await message.channel.send("Usage: $sb /addstock [stock name] [notification price] [1 for above or 0 for below]")
 
+async def removeStock(message: Message, args: list, discordID: str):
+    if (len(args) == 1):
+        removeStockName = args[0]
+        database.deleteStock(discordID,removeStockName)
+        await message.channel.send(f"{message.author.mention}, {removeStockName} has been deleted!")
+    else:
+        await message.channel.send("Usage: $sb /removestock [stock name]")
+
+async def listStocks(message: Message, discordID: str):
+    stockList = '```\n' + '\n'.join(database.retrieveAll(discordID)) + '\n```'
+    await message.channel.send(f"{message.author.mention}'s stocks:\n{stockList}")
+
+
+async def deleteAccount(message: Message, discordID: str):
+    database.deleteUser(discordID)
+    await message.channel.send(f"{message.author.mention}, thank you for using Stock Bot!")
+
+
+async def editStock(message: Message, args: list, discordID: str):
+    if (len(args) == 3):
+        editStockName = args[0]
+        editStockPrice = args[1]
+        editStockAboveBelow = args[2]
+        database.updateStock(discordID, editStockName, editStockPrice, editStockAboveBelow)
+        await message.channel.send(f"{message.author.mention}, thank you for using Stock Bot!")
+    else: 
+        await message.channel.send("Usage: $sb /editstock [stock name] [new price] [1 for above or 0 for below]")
 
 async def startMonitoring(message, discordID):
     notifyList = stockCommands.monitor_stocks(discordID, interval=60, stop_event=stop_event)
