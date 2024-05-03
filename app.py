@@ -69,12 +69,13 @@ async def on_message(message: Message) -> None:
                                        \n - $sb /deleteAccount
                                        \n - $sb /editstock [stock name] [new price] [1 for above or 0 for below]""")
 
-        
+#Function to add account (Creates Tables if not exists and adds user)        
 async def addAccount(message: Message, args: list, username: str, discordID: str):
     database.initializeTables(username, discordID)
     database.addUser(username, discordID)
     await message.channel.send(f"{message.author.mention}, your account has been created!")
 
+#Adds stock to stocks table 
 async def addStock(message: Message, args: list, discordID: str):
     if (len(args) == 3):
         addStockName = args[0]
@@ -90,6 +91,7 @@ async def addStock(message: Message, args: list, discordID: str):
     else: 
         await message.channel.send("Sorry, please check syntax\nUsage: $sb /addstock [stock name] [notification price] [1 for above or 0 for below]")
 
+#removes stock from stocks table 
 async def removeStock(message: Message, args: list, discordID: str):
     if (len(args) == 1):
         removeStockName = args[0]
@@ -98,16 +100,17 @@ async def removeStock(message: Message, args: list, discordID: str):
     else:
         await message.channel.send("Sorry, please check syntax\nUsage: $sb /removestock [stock name]")
 
+#Lists active stocks being monitored 
 async def listStocks(message: Message, discordID: str):
     stockList = '```\n' + '\n'.join(database.retrieveAll(discordID)) + '\n```'
     await message.channel.send(f"{message.author.mention}'s stocks:\n{stockList}")
 
-
+#Deletes account and associated stocks 
 async def deleteAccount(message: Message, discordID: str):
     database.deleteUser(discordID)
     await message.channel.send(f"{message.author.mention}, thank you for using Stock Bot!")
 
-
+#Edit the notification price or direction 
 async def editStock(message: Message, args: list, discordID: str):
     if (len(args) == 3):
         editStockName = args[0]
@@ -117,6 +120,7 @@ async def editStock(message: Message, args: list, discordID: str):
         await message.channel.send(f"{message.author.mention}, thank you for using Stock Bot!")
     else: 
         await message.channel.send("Sorry, please check syntax\nUsage: $sb /editstock [stock name] [new price] [1 for above or 0 for below]")
+
 
 async def startMonitoring(message, discordID):
     notifyList = stockCommands.monitor_stocks(discordID, interval=60, stop_event=stop_event)
