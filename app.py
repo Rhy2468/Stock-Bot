@@ -32,7 +32,6 @@ async def on_ready() -> None:
 #Handling messages 
 @client.event
 async def on_message(message: Message) -> None:
-    #IF author is user, return. 
     if message.author == client.user:
         return 
     
@@ -62,13 +61,19 @@ async def on_message(message: Message) -> None:
         elif command == '/editstock':
             await editStock(message, args, discordID)
         else:
-            # If the command is unrecognized
-            await message.channel.send("Sorry, I didn't recognize that command.")
+            await message.channel.send("""Sorry, I didn't recognize that command. Here is a list of my available commands:
+                                       \n - $sb /addaccount
+                                       \n - $sb /addstock [stock name] [notification price] [1 for above or 0 for below]
+                                       \n - $sb /removestock [stock name]
+                                       \n - $sb /listStocks
+                                       \n - $sb /deleteAccount
+                                       \n - $sb /editstock [stock name] [new price] [1 for above or 0 for below]""")
+
         
-async def addAccount(args: list, username: str, discordID: str):
+async def addAccount(message: Message, args: list, username: str, discordID: str):
     database.initializeTables(username, discordID)
     database.addUser(username, discordID)
-    print('Finished Add Account')
+    await message.channel.send(f"{message.author.mention}, your account has been created!")
 
 async def addStock(message: Message, args: list, discordID: str):
     if (len(args) == 3):
@@ -83,7 +88,7 @@ async def addStock(message: Message, args: list, discordID: str):
         except ValueError:
             await message.channel.send("Please enter a valid Price")
     else: 
-        await message.channel.send("Usage: $sb /addstock [stock name] [notification price] [1 for above or 0 for below]")
+        await message.channel.send("Sorry, please check syntax\nUsage: $sb /addstock [stock name] [notification price] [1 for above or 0 for below]")
 
 async def removeStock(message: Message, args: list, discordID: str):
     if (len(args) == 1):
@@ -91,7 +96,7 @@ async def removeStock(message: Message, args: list, discordID: str):
         database.deleteStock(discordID,removeStockName)
         await message.channel.send(f"{message.author.mention}, {removeStockName} has been deleted!")
     else:
-        await message.channel.send("Usage: $sb /removestock [stock name]")
+        await message.channel.send("Sorry, please check syntax\nUsage: $sb /removestock [stock name]")
 
 async def listStocks(message: Message, discordID: str):
     stockList = '```\n' + '\n'.join(database.retrieveAll(discordID)) + '\n```'
@@ -111,7 +116,7 @@ async def editStock(message: Message, args: list, discordID: str):
         database.updateStock(discordID, editStockName, editStockPrice, editStockAboveBelow)
         await message.channel.send(f"{message.author.mention}, thank you for using Stock Bot!")
     else: 
-        await message.channel.send("Usage: $sb /editstock [stock name] [new price] [1 for above or 0 for below]")
+        await message.channel.send("Sorry, please check syntax\nUsage: $sb /editstock [stock name] [new price] [1 for above or 0 for below]")
 
 async def startMonitoring(message, discordID):
     notifyList = stockCommands.monitor_stocks(discordID, interval=60, stop_event=stop_event)
